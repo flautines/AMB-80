@@ -1,0 +1,3 @@
+[submodule "vendor/blip-buf"]
+	path = vendor/blip-buf
+	url = https://github.com/nesbox/blip-buf
