@@ -98,7 +98,7 @@ const tic_script_config* tic_core_script_config(tic_mem* memory)
   };
 
   FOR(const struct Config*, it, Configs)
-    if(compareMetatag(memory->cart.code.data, "script", it->name, it->func()->signleComment))
+    if(compareMetatag(memory->cart.code.data, "script", it->name, it->func()->singleComment))
       return it->func();
   
   return Configs->func();
