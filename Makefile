@@ -3,7 +3,8 @@ CC:=clang
 CCFLAGS:=-g -Wall -pedantic -std=c11
 LUADIR:=-I/usr/include/lua5.3
 INCDIRS:=-Iinclude -Isrc -Ivendor/blip-buf $(shell sdl2-config --cflags) $(LUADIR)
-LDFLAGS:=$(shell sdl2-config --libs)
+LUALIB:=lua5.3
+LDFLAGS:=$(shell sdl2-config --libs) -l$(LUALIB)
 SUBDIRS:=src/api src/core src/ext src/studio src/system/sdl src/
 OBJSUBDIRS:=$(foreach DIR, $(SUBDIRS), $(patsubst $(SRCDIR)%, $(OBJDIR)%, $(DIR)))
 SRCFILES:=$(foreach DIR, $(SUBDIRS), $(wildcard $(DIR)/*.c))

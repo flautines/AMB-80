@@ -1,6 +1,7 @@
 // MIT License
 
-// Copyright (c) 2017 Vadim Grigoruk @nesbox
+// Copyright (c) 2017 Vadim Grigoruk @nesbox // grigoruk@gmail.com
+//                    Damien de Lemeny @ddelemeny // hello@ddelemeny.me
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,41 +23,23 @@
 
 #pragma once
 
-#if !defined(TIC_BUILD_WITH_LUA)    && \
-    !defined(TIC_BUILD_WITH_MOON)   && \
-    !defined(TIC_BUILD_WITH_FENNEL) && \
-    !defined(TIC_BUILD_WITH_JS)     && \
-    !defined(TIC_BUILD_WITH_WREN)   && \
-    !defined(TIC_BUILD_WITH_SQUIRREL)
+#include "tools.h"
 
-#   define TIC_BUILD_WITH_LUA      1
-#   define TIC_BUILD_WITH_MOON     1
-#   define TIC_BUILD_WITH_FENNEL   1
-#   define TIC_BUILD_WITH_JS       1
-#   define TIC_BUILD_WITH_WREN     1
-#   define TIC_BUILD_WITH_SQUIRREL 1
+typedef struct
+{
+    u32     page_orig;
+    u32     bank_orig;
+    u32     nb_pages;
+    u32     bank_size;
+    u32     sheet_width;
+    u32     tile_width;
+    size_t  ptr_size;
+    u8      (*peek)(const void*, u32);
+    void    (*poke)(void*, u32, u8);
+} tic_blit_segment;
 
-#endif
-
-#define TIC_BUILD_WITH_LUA  1
-
-#if defined(TIC_BUILD_WITH_LUA)
-#   define TIC_LUA_DEF(macro) macro(lua, ".lua", "--", lua_State)
-#endif
-
-#define SCRIPT_LIST(macro) \
-    TIC_LUA_DEF (macro)
-
-#if defined(WIN32) || defined(_WIN32) || defined(__CYGWIN__) || defined(__MINGW32__)
-#   undef __TIC_WINDOWS__
-#   define __TIC_WINDOWS__ 1
-#endif
-
-#if (defined(linux) || defined(__linux) || defined(__linux__))
-#   undef __TIC_LINUX
-#   define __TIC_LINUX__ 1
-#endif
-
-#ifndef TIC80_API
-#   define TIC80_API
-#endif
+typedef struct
+{
+    const tic_blit_segment* segment;
+    u8* ptr;
+} tic_tilesheet;

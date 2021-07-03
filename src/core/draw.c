@@ -22,11 +22,43 @@
 
 #include "api.h"
 #include "core.h"
-//#include "tilesheet.h"
+#include "tilesheet.h"
 
 #include <string.h>
 #include <stdlib.h>
 
+#define TRANSPARENT_COLOR 255
+
+typedef void(*PixelFunc)(tic_mem* memory, s32 x, s32 y, u8 color);
+
+//#34
+static tic_tilesheet getTileSheetFromSegment(tic_mem* memory, u8 segment)
+{
+  u8* src;
+  switch (segment)
+  {
+    case 0:
+    case 1:
+      src = (u8*)&memory->ram.font.data;
+      break;
+    default:
+      src = (u8*)&memory->ram.tiles.data;
+      break;      
+  }
+
+  return tic_tilesheet_get(segment, src);
+}
+
+//#385
+s32 tic_api_print(tic_mem* memory, const char* text, s32 x, s32 y, u8 color, bool fixed, s32 scale, bool alt)
+{
+  u8 mapping[] = { 255, color };
+  tic_tilesheet font_face = getTileSheetFromSegment(memory, 1);
+
+  u8 width = alt ? TIC_ALTFONT_WIDTH : TIC_FONT_WIDTH;
+  if (!fixed) width -= 2;
+  return drawText((tic_core*)memory, &font_face, text, x, y, width, TIC_FONT_HEIGHT, fixed, mapping, scale, alt);
+}
 void tic_api_clip(tic_mem* memory, s32 x, s32 y, s32 width, s32 height)
 {
   tic_core* core = (tic_core*)memory;

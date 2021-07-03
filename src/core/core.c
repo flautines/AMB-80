@@ -1,8 +1,19 @@
 #include "api.h"
 #include "core.h"
+//#include "tilesheet.h"
 
+#include <assert.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <stddef.h>
+#include <time.h>
+
+static_assert(TIC_BANK_BITS == 3,                 "tic_bank_bits");
+static_assert(sizeof(tic_map) < 1024 * 32,        "tic_map");
+static_assert(sizeof(tic_vram) == TIC_VRAM_SIZE,  "tic_vram");
+static_assert(sizeof(tic_ram) == TIC_RAM_SIZE,    "tic_ram");
 
 static void setPixelDma(tic_mem* tic, s32 x, s32 y, u8 color)
 {
@@ -83,6 +94,8 @@ static void resetBlitSegment(tic_mem* memory)
 {
     memory->ram.vram.blit.segment = TIC_DEFAULT_BLIT_MODE;
 }
+
+extern const tic_script_config* get_lua_script_config();
 
 const tic_script_config* tic_core_script_config(tic_mem* memory)
 {
