@@ -49,16 +49,84 @@ static tic_tilesheet getTileSheetFromSegment(tic_mem* memory, u8 segment)
   return tic_tilesheet_get(segment, src);
 }
 
-//#385
-s32 tic_api_print(tic_mem* memory, const char* text, s32 x, s32 y, u8 color, bool fixed, s32 scale, bool alt)
-{
-  u8 mapping[] = { 255, color };
-  tic_tilesheet font_face = getTileSheetFromSegment(memory, 1);
+#define EARLY_CLIP(x, y, width, height) \
+  ( \
+    (((y)+(height)-1) < core->state.clip.t) \
+    || (((x)+(width)-1) < core->state.clip.l) \
+    || ((y) >= core->state.clip.b) \
+    || ((x) >= core->state.clip.r) \
+  )
 
-  u8 width = alt ? TIC_ALTFONT_WIDTH : TIC_FONT_WIDTH;
-  if (!fixed) width -= 2;
-  return drawText((tic_core*)memory, &font_face, text, x, y, width, TIC_FONT_HEIGHT, fixed, mapping, scale, alt);
+//#271
+static s32 drawChar(tic_core* core, tic_tileptr* font_char, s32 x, s32 y, s32 scale, bool fixed, u8* mapping)
+{
+  enum { Size = TIC_SPRITESIZE };
+
+  s32 j = 0, start = 0, end = Size;
+
+  if (!fixed) 
+  {
+    for (s32 i = 0; i < Size; i++)
+    {
+      for (j = 0; j < Size; j++)
+        if (mapping[tic_tilesheet_gettilepix(font_char, i, j)] != TRANSPARENT_COLOR) break;
+      if ( j < Size) break; else start++;
+    }
+    for (s32 i = Size - 1; i >= start; i--)
+    {
+      for ( j = 0; j < Size; j++)
+        if (mapping[tic_tilesheet_gettilepix(font_char, i, j)] != TRANSPARENT_COLOR) break;
+      if (j < Size) break; else end--;
+    }
+  }
+  s32 width = end - start;
+
+  if (EARLY_CLIP(x, y, Size * scale, Size * scale)) return width;
+
+  s32 colStart = start, colStep = 1, rowStart = 0, rowStep = 1;
+
+  for (s32 i = 0, col = colStart, xs = x; i < width; i++, col += colStep, xs += scale)
+  {
+    for (s32 j = 0, row = rowStart, ys = y; j < Size; j++, row += rowStep, ys += scale)
+    {
+      u8 color = tic_tilesheet_gettilepix(font_char, col, row);
+      if (mapping[color] != TRANSPARENT_COLOR)
+        drawRect(core, xs, ys, scale, scale, mapping[color]);
+    }
+  }
+
+  return width;
 }
+
+//#307
+static s32 drawText(tic_core* core, tic_tilesheet* font_face, const char* text, s32 x, s32 y, s32 width, s32 height, bool fixed, u8* mapping, s32 scale, bool alt)
+{
+  s32 pos = x;
+  s32 MAX = x;
+  char sym = 0;
+
+  while ((sym = *text++))
+  {
+    if (sym == '\n')
+    {
+      if (pos > MAX)
+        MAX = pos;
+
+      pos = x;
+      y += height * scale;
+    }
+    else 
+    {
+      tic_tileptr font_char =tic_tilesheet_gettile(font_face, alt * TIC_FONT_CHARS / 2 + sym, true);
+      s32 size = drawChar(core, &font_char, pos, y, scale, fixed, mapping);
+      pos += ((!fixed && size) ? size + 1 : width) * scale;
+    }
+  }
+
+  return pos > MAX ? pos - x : MAX - x;
+}
+
+//#333
 void tic_api_clip(tic_mem* memory, s32 x, s32 y, s32 width, s32 height)
 {
   tic_core* core = (tic_core*)memory;
@@ -73,3 +141,15 @@ void tic_api_clip(tic_mem* memory, s32 x, s32 y, s32 width, s32 height)
   if (core->state.clip.r > TIC80_WIDTH) core->state.clip.r = TIC80_WIDTH;
   if (core->state.clip.b > TIC80_HEIGHT) core->state.clip.b = TIC80_HEIGHT;
 }
+
+//#385
+s32 tic_api_print(tic_mem* memory, const char* text, s32 x, s32 y, u8 color, bool fixed, s32 scale, bool alt)
+{
+  u8 mapping[] = { 255, color };
+  tic_tilesheet font_face = getTileSheetFromSegment(memory, 1);
+
+  u8 width = alt ? TIC_ALTFONT_WIDTH : TIC_FONT_WIDTH;
+  if (!fixed) width -= 2;
+  return drawText((tic_core*)memory, &font_face, text, x, y, width, TIC_FONT_HEIGHT, fixed, mapping, scale, alt);
+}
+

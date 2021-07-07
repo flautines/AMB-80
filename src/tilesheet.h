@@ -43,3 +43,26 @@ typedef struct
     const tic_blit_segment* segment;
     u8* ptr;
 } tic_tilesheet;
+
+typedef struct
+{
+    const tic_blit_segment* segment;
+    u32 offset;
+    u8* ptr;
+} tic_tileptr;
+
+tic_tilesheet tic_tilesheet_get(u8 segment, u8* ptr);
+tic_tileptr tic_tilesheet_gettile(const tic_tilesheet* sheet, s32 index, bool local);
+
+inline u8 tic_tilesheet_getpix(const tic_tilesheet* sheet, s32 x, s32 y)
+{
+    u16 tile_index = ((y >> 3) << 4) + (x / sheet->segment->tile_width);
+    u32 pix_addr = ((x & (sheet->segment->tile_width - 1)) + ((y & 7) * sheet->segment->tile_width));
+    return sheet->segment->peek(sheet->ptr+tile_index * sheet->segment->ptr_size, pix_addr);
+}
+
+inline u8 tic_tilesheet_gettilepix(const tic_tileptr* tile, s32 x, s32 y)
+{
+    u32 addr = tile->offset + x + (y * tile->segment->tile_width);
+    return tile->segment->peek(tile->ptr, addr);
+}

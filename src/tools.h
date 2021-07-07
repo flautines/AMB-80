@@ -44,3 +44,26 @@ inline u8 tic_tool_peek4(const void* addr, u32 index)
 {
   return PEEK_N(addr, index, 1,1,2,15);
 }
+
+inline void tic_tool_poke2(void* addr, u32 index, u8 value)
+{
+  POKE_N(addr, index, value, 2,3,1,3);
+}
+
+inline u8 tic_tool_peek2(const void* addr, u32 index)
+{
+    return PEEK_N(addr, index, 2,3,1,3);
+}
+
+inline void tic_tool_poke1(void* addr, u32 index, u8 value)
+{
+  POKE_N(addr, index, value, 3,7,0,1);
+}
+
+inline u8 tic_tool_peek1(const void* addr, u32 index)
+{
+  return PEEK_N(addr, index, 3,7,0,1);
+}
+
+#undef PEEK_N
+#undef POKE_N
