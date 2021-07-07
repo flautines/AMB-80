@@ -53,9 +53,47 @@ static const tic_blit_segment segments[] = {
 extern u8 tic_tilesheet_getpix(const tic_tilesheet* sheet, s32 x, s32 y);
 extern void tic_tilesheet_setpix(const tic_tilesheet* sheet, s32 x, s32 y, u8 value);
 extern u8 tic_tilesheet_gettilepix(const tic_tileptr* tile, s32 x, s32 y);
-extern void tic_tilesheet_settilepix(const tic_tileptr* tile, s32 x, s32, y, u8 value);
+extern void tic_tilesheet_settilepix(const tic_tileptr* tile, s32 x, s32 y, u8 value);
 
 tic_tilesheet tic_tilesheet_get(u8 segment, u8* ptr)
 {
   return (tic_tilesheet) { &segments[segment], ptr };
 }
+
+tic_tileptr tic_tilesheet_gettile(const tic_tilesheet* sheet, s32 index, bool local)
+{
+  enum { Cols = 16, Size = 8 };
+  const tic_blit_segment* segment = sheet->segment;
+
+  s32 bank, page, iy, ix;
+  if (local) 
+  {
+    index = index & 255;
+    bank = segment->bank_orig;
+    page = segment->page_orig;
+    div_t ixy = div(index, Cols);
+    iy = ixy.quot;
+    ix = ixy.rem;
+  }
+  else 
+  {
+    div_t ia = div(index, segment->bank_size);
+    div_t ib = div(ia.rem, segment->sheet_width);
+    div_t ic = div(ib.rem, Cols);
+    bank = (ia.quot + segment->bank_orig) % 2;
+    page = (ic.quot + segment->page_orig) % segment->nb_pages;
+    iy = ib.quot % Cols;
+    ix = ic.rem;
+  }
+
+  div_t xdiv = div(ix, segment->nb_pages);
+  u32 ptr_offset = (bank * Cols + iy) * Cols + page * Cols / segment->nb_pages + xdiv.quot;
+  u8* ptr = sheet->ptr + segment->ptr_size + ptr_offset;
+  u32 offset = (xdiv.rem * Size);
+
+  return (tic_tileptr) { segment, offset, ptr };
+}
+
+extern s32 tic_blit_calc_segment(const tic_blit* blit);
+extern void tic_blit_update_bpp(tic_blit* blit, tic_bpp bpp);
+extern s32 tic_blit_calc_index(const tic_blit* blit);
