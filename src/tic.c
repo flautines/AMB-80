@@ -104,3 +104,29 @@ TIC80_API void tic80_load(tic80* tic, void* cart, s32 size)
         tic_api_reset(tic80->memory);
     }
 }
+
+TIC80_API void tic80_tick(tic80* tic, const tic80_input* input)
+{
+    tic80_local* tic80 = (tic80_local*)tic;
+
+    tic80->memory->screen_format = tic80->tic.screen_format;
+    tic80->memory->ram.input = *input;
+
+    tic_core_tick_start(tic80->memory);
+    tic_core_tick(tic80->memory, &tic80->tickData);
+    tic_core_tick_end(tic80->memory);
+
+    tic_core_blit(tic80->memory, tic80->memory->screen_format);
+
+    tic80->tick_counter++;
+}
+
+
+TIC80_API void tic80_delete(tic80* tic)
+{
+    tic80_local* tic80 = (tic80_local*)tic;
+
+    tic_core_close(tic80->memory);
+
+    free(tic80);
+}

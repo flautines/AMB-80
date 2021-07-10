@@ -88,7 +88,126 @@ s32 runCart(void* cart, s32 size)
         fprintf(stderr, "Failed to load cart data.");
         output = 1;
     }
+    else 
+    {
+        u64 nextTick = SDL_GetPerformanceCounter();
+        const u64 Delta = SDL_GetPerformanceFrequency() / TIC80_FRAMERATE;
 
+        while (!state.quit)
+        {
+            SDL_Event event;
+
+            while (SDL_PollEvent(&event))
+            {
+                switch(event.type)
+                {
+                case SDL_QUIT:
+                    state.quit = true;
+                    break;
+                case SDL_KEYUP:
+                    // Quit when pressing ESC
+                    if (event.key.keysym.sym == SDLK_ESCAPE)
+                    {
+                        state.quit = true;
+                    }
+                    break;
+                }
+            }
+
+            {
+                input.gamepads.data = 0;
+                const uint8_t* keyboard = SDL_GetKeyboardState(NULL);
+
+                static const SDL_Scancode Keys[] =
+                {
+                    SDL_SCANCODE_UP,
+                    SDL_SCANCODE_DOWN,
+                    SDL_SCANCODE_LEFT,
+                    SDL_SCANCODE_RIGHT,
+
+                    SDL_SCANCODE_Z,
+                    SDL_SCANCODE_X,
+                    SDL_SCANCODE_A,
+                    SDL_SCANCODE_S,
+                };
+
+                for (s32 i = 0; i < SDL_arraysize(Keys); i++)
+                {
+                    if (keyboard[Keys[i]])
+                    {
+                        input.gamepads.first.data |= (1 << i);
+                    }
+                }
+            }
+
+            nextTick += Delta;
+
+            tic80_tick(tic, &input);
+
+            if (!audioStarted && audioDevice)
+                audioStarted = true;
+
+            SDL_PauseAudioDevice(audioDevice, 0);
+
+            {
+                s32 size = tic->sound.count * sizeof(tic->sound.samples[0]);
+
+                if (cvt.needed)
+                {
+                    SDL_memcpy(cvt.buf, tic->sound.samples, size);
+                    SDL_ConvertAudio(&cvt);
+                    SDL_QueueAudio(audioDevice, cvt.buf, cvt.len_cvt);
+                }
+                else SDL_QueueAudio(audioDevice, tic->sound.samples, size);
+            }
+
+            SDL_RenderClear(renderer);
+
+            {
+                void* pixels = NULL;
+                s32 pitch = 0;
+                SDL_Rect destination;
+                SDL_LockTexture(texture, NULL, &pixels, &pitch);
+                SDL_memcpy(pixels, tic->screen, pitch * TIC80_FULLHEIGHT);
+                SDL_UnlockTexture(texture);
+
+                // Render the image in the proper aspect ratio.
+                {
+                    s32 windowWidth, windowHeight;
+                    SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+                    float widthRatio = (float)windowWidth / TIC80_FULLWIDTH;
+                    float heightRatio = (float)windowHeight / TIC80_FULLHEIGHT;
+                    float optimalSize = widthRatio < heightRatio ? widthRatio : heightRatio;
+                    destination.w = (s32)(TIC80_FULLWIDTH * optimalSize);
+                    destination.h = (s32)(TIC80_FULLHEIGHT * optimalSize);
+                    destination.x = windowWidth / 2 - destination.w / 2;
+                    destination.y = windowHeight / 2 - destination.h / 2;
+                }
+
+                SDL_RenderCopy(renderer, texture, NULL ,&destination);
+            }
+
+            SDL_RenderPresent(renderer);
+
+            {
+                s64 delay = nextTick - SDL_GetPerformanceCounter();
+
+                if (delay < 0)
+                    nextTick -= delay;
+                else SDL_Delay((u32)(delay * 1000 / SDL_GetPerformanceFrequency()));
+            }
+        }
+
+        tic80_delete(tic);
+    }
+
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_CloseAudioDevice(audioDevice);
+
+    SDL_free(cart);
+    return output;
 }
 
 s32 main(s32 argc, char** argv)
