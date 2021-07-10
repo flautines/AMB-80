@@ -26,6 +26,41 @@
 #include <tic80.h>
 #include "api.h"
 
+static void onTrace(void* data, const char* text, u8 color)
+{
+    tic80* tic = (tic80*)data;
+
+    if(tic->callback.trace)
+        tic->callback.trace(text, color);
+}
+
+static void onError(void* data, const char* info)
+{
+    tic80* tic = (tic80*)data;
+
+    if(tic->callback.error)
+        tic->callback.error(info);
+}
+
+static void onExit(void* data)
+{
+    tic80* tic = (tic80*)data;
+
+    if(tic->callback.exit)
+        tic->callback.exit();
+}
+
+static u64 getFreq(void* data)
+{
+    return TIC80_FRAMERATE;
+}
+
+static u64 getCounter(void* data)
+{
+    tic80_local* tic80 = (tic80_local*)data;
+    return tic80->tick_counter;
+}
+
 tic80* tic80_create(s32 samplerate)
 {
     tic80_local* tic80 = malloc(sizeof(tic80_local));
@@ -40,4 +75,32 @@ tic80* tic80_create(s32 samplerate)
     }
 
     return NULL;
+}
+
+//#83
+TIC80_API void tic80_load(tic80* tic, void* cart, s32 size)
+{
+    tic80_local* tic80 = (tic80_local*)tic;
+
+    tic80->tic.sound.count = tic80->memory->samples.size/sizeof(s16);
+    tic80->tic.sound.samples = tic80->memory->samples.buffer;
+
+    tic80->tic.screen = tic80->memory->screen;
+
+    {
+        tic80->tickData.error = onError;
+        tic80->tickData.trace = onTrace;
+        tic80->tickData.exit  = onExit;
+        tic80->tickData.data  = tic80;
+
+        tic80->tickData.start = 0;
+        tic80->tickData.freq = getFreq;
+        tic80->tickData.counter = getCounter;
+        tic80->tick_counter = 0;
+    }
+
+    {
+        tic_cart_load(&tic80->memory->cart, cart, size);
+        tic_api_reset(tic80->memory);
+    }
 }

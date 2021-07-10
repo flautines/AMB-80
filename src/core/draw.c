@@ -57,6 +57,22 @@ static tic_tilesheet getTileSheetFromSegment(tic_mem* memory, u8 segment)
     || ((x) >= core->state.clip.r) \
   )
 
+//#83
+static void drawHLine(tic_core* core, s32 x, s32 y, s32 width, u8 color)
+{
+  if (y < core->state.clip.t || core->state.clip.b <= y) return;
+
+  s32 xl = MAX(x, core->state.clip.l);
+  s32 xr = MIN(x + width, core->state.clip.r);
+
+  core->state.drawhline(&core->memory, xl, xr, y, color);
+}
+//#104
+static void drawRect(tic_core* core, s32 x, s32 y, s32 width, s32 height, u8 color)
+{
+  for (s32 i = y; i < y + height; ++i)
+    drawHLine(core, x, i, width, color);
+}
 //#271
 static s32 drawChar(tic_core* core, tic_tileptr* font_char, s32 x, s32 y, s32 scale, bool fixed, u8* mapping)
 {

@@ -95,6 +95,19 @@ static void resetBlitSegment(tic_mem* memory)
     memory->ram.vram.blit.segment = TIC_DEFAULT_BLIT_MODE;
 }
 
+//#253
+static bool compareMetatag(const char* code, const char* tag, const char* value, const char* comment)
+{
+  bool result = false;
+
+  const char* str = tic_tool_metatag(code, tag, comment);
+
+  if (str)
+  {
+    result = strcmp(str, value) == 0;
+    free((void*)str);
+  }
+}
 extern const tic_script_config* get_lua_script_config();
 
 const tic_script_config* tic_core_script_config(tic_mem* memory)
