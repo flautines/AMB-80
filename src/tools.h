@@ -73,4 +73,7 @@ inline u8 tic_tool_peek1(const void* addr, u32 index)
 #undef PEEK_N
 #undef POKE_N
 
+bool	tic_tool_empty(const void* buffer, s32 size);
+#define EMPTY(BUFFER) (tic_tool_empty((BUFFER), sizeof (BUFFER)))
+
 const char* tic_tool_metatag(const char* code, const char* tag, const char* comment);

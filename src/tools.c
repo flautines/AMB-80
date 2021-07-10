@@ -13,6 +13,15 @@ extern void tic_tool_poke1(void* addr, u32 index, u8 value);
 extern u8 tic_tool_peek1(const void* addr, u32 index);
 extern s32 tic_tool_sfx_pos(s32 speed, s32 ticks);
 
+bool tic_tool_empty(const void* buffer, s32 size)
+{
+	for(const u8* ptr = buffer, *end = ptr + size; ptr < end;)
+		if (*ptr++)
+			return false;
+	
+	return true;
+}
+
 const char* tic_tool_metatag(const char* code, const char* tag, const char* comment)
 {
     const char* start = NULL;

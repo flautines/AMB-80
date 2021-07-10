@@ -90,10 +90,12 @@ typedef struct {
   s32 beat;
 } tic_jump_command;
 
-typedef struct {
-  struct {
+typedef struct 
+{
+  struct 
+  {
     tic80_gamepads previous;
-    u32 hold[sizeof(tic80_gamepads) * BITS_IN_BYTE];
+    u32 holds[sizeof(tic80_gamepads) * BITS_IN_BYTE];
   } gamepads;
 
   struct {
