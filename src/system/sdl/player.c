@@ -30,9 +30,13 @@
 #define TIC80_DEFAULT_CART "cart.tic"
 #define TIC80_EXECUTABLE_NAME "player-sdl"
 
-static struct {
+static struct 
+{
     bool quit;
-} state = { .quit = false, };
+} state = 
+{ 
+    .quit = false, 
+};
 
 static void onExit()
 {
@@ -66,7 +70,8 @@ s32 runCart(void* cart, s32 size)
 
         SDL_BuildAudioCVT(&cvt, want.format, want.channels, audioSpec.freq, audioSpec.format, audioSpec.channels, audioSpec.freq);
 
-        if (cvt.needed) {
+        if (cvt.needed) 
+        {
             cvt.len = audioSpec.freq * audioSpec.channels * sizeof(s16) / TIC80_FRAMERATE;
             cvt.buf = SDL_malloc(cvt.len * cvt.len_mult);
         }
@@ -83,6 +88,7 @@ s32 runCart(void* cart, s32 size)
         fprintf(stderr, "Failed to load cart data.");
         output = 1;
     }
+
 }
 
 s32 main(s32 argc, char** argv)
