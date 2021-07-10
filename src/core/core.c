@@ -138,6 +138,7 @@ static void resetDma(tic_mem* memory)
   core->state.drawhline = drawHLineDma;
 }
 
+//#341
 void tic_api_reset(tic_mem* memory)
 {
     resetPalette(memory);
@@ -159,6 +160,19 @@ void tic_api_reset(tic_mem* memory)
     updateSaveid(memory);
 }
 
+//#480
+void tic_core_tick_start(tic_mem* memory)
+{
+  tic_core_sound_tick_start(memory);
+  tic_core_tick_io(memory);
+
+  tic_core* core = (tic_core*)memory;
+  core->state.synced = 0;
+  resetDma(memory);
+}
+
+
+//#610
 tic_mem* tic_core_create(s32 samplerate)
 {
     tic_core* core = (tic_core*)malloc(sizeof(tic_core));

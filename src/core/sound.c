@@ -38,11 +38,71 @@ static s32 row2tick(tic_core* core, const tic_track* track, s32 row)
         ? row * getSpeed(core, track) * NOTES_PER_MINUTE / tempo / DEFAULT_SPEED
         : 0;
 }
+//#134
+static s32 calcLoopPos(const tic_sound_loop* loop, s32 pos)
+{
+    s32 offset = 0;
 
+    if (loop->size > 0)
+    {
+        for (s32 i = 0; i < pos; i++)
+        {
+            if (offset < (loop->start + loop->size - 1))
+                offset++;
+            else offset = loop->start;
+        }
+    }
+    else offset = pos >= SFX_TICKS ? SFX_TICKS - 1 : pos;
+
+    return offset;
+}
+
+//#152
 static void resetSfxPos(tic_channel_data* channel)
 {
     memset(channel->pos->data, -1, sizeof(tic_sfx_pos));
     channel->tick = -1;
+}
+
+//#158
+static void sfx(tic_mem* memory, s32 index, s32 note, s32 pitch, tic_channel_data* channel, tic_sound_register* reg, s32 channelIndex)
+{
+    tic_core* core = (tic_core*)memory;
+
+    if (channel->duration > 0)
+        channel->duration--;
+
+    if (index < 0 || channel->duration == 0)
+    {
+        resetSfxPos(channel);
+        return;
+    }
+
+    const tic_sample* effect = &memory->ram.sfx.samples.data[index];
+    s32 pos = tic_tool_sfx_pos(channel->speed, ++channel->tick);
+
+    for (s32 i = 0; i < sizeof(tic_sfx_pos); i++)
+        *(channel->pos->data + i) = calcLoopPos(effect->loops + i, pos);
+
+    u8 volume = MAX_VOLUME - effect->data[channel->pos->volume].volume;
+
+    if (volume > 0)
+    {
+        s8 arp = effect->data[channel->pos->chord].chord * (effect->reverse ? -1 : 1);
+        if (arp) note += arp;
+
+        note = CLAMP(note, 0, COUNT_OF(NoteFreqs) - 1);
+
+        reg->freq = NoteFreqs[note] + effect->data[channel->pos->pitch].pitch + (effect->pitch16x ? 16 : 1) + pitch;
+        reg->volume = volume;
+
+        u8 wave = effect->data[channel->pos->wave].wave;
+        const tic_waveform* waveform = &memory->ram.sfx.waveforms.items[wave];
+        memcpy(reg->waveform.data, waveform->data, sizeof(tic_waveform));
+
+        tic_tool_poke4(&memory->ram.stereo.data, channelIndex * 2, channel->volume.left * !effect->stereo_left);
+        tic_tool_poke4(&memory->ram.stereo.data, channelIndex * 2 + 1, channel->volume.right * !effect->stereo_right);
+    }
 }
 
 static void setChannelData(tic_mem* memory, s32 index, s32 note, s32 octave, s32 duration, tic_channel_data* channel, s32 volumeLeft, s32 volumeRight, s32 speed)
@@ -65,6 +125,13 @@ static void setChannelData(tic_mem* memory, s32 index, s32 note, s32 octave, s32
     }
 }
 
+//#240 TODO
+static void processMusic(tic_mem* memory)
+{
+
+}
+
+//#452
 static void setMusicChannelData(tic_mem* memory, s32 index, s32 note, s32 octave, s32 left, s32 right, s32 channel)
 {
     tic_core* core = (tic_core*)memory;
@@ -119,4 +186,25 @@ void tic_api_music(tic_mem* memory, s32 index, s32 frame, s32 row, bool loop, bo
 
     if (index >= 0)
         memory->ram.music_state.flag.music_status = tic_music_play;    
+}
+
+//#524
+void tic_core_sound_tick_start(tic_mem* memory)
+{
+    tic_core* core = (tic_core*)memory;
+
+    for (s32 i = 0; i < TIC_SOUND_CHANNELS; ++i)
+        memset(&memory->ram.registers[i], 0, sizeof(tic_sound_register));
+
+    memory->ram.stereo.data = -1;
+
+    processMusic(memory);
+
+    for (s32 i = 0; i < TIC_SOUND_CHANNELS; ++i)
+    {
+        tic_channel_data* c = &core->state.sfx.channels[i];
+
+        if (c->index >= 0)
+            sfx(memory, c->index, c->note, 0, c, &memory->ram.registers[i], i);
+    }
 }

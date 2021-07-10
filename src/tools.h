@@ -25,6 +25,11 @@
 #include "tic.h"
 #include <stddef.h>
 
+inline s32 tic_tool_sfx_pos(s32 speed, s32 ticks)
+{
+  return speed > 0 ? ticks * (1 + speed) : ticks / (1 - speed);
+}
+
 #define POKE_N(P,I,V,A,B,C,D) do      \
 {                                     \
   u8* val = (u8*)(P) + ((I) >> (A));  \

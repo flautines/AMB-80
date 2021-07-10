@@ -11,6 +11,7 @@ extern void tic_tool_poke2(void* addr, u32 index, u8 value);
 extern u8 tic_tool_peek2(const void* addr, u32 index);
 extern void tic_tool_poke1(void* addr, u32 index, u8 value);
 extern u8 tic_tool_peek1(const void* addr, u32 index);
+extern s32 tic_tool_sfx_pos(s32 speed, s32 ticks);
 
 const char* tic_tool_metatag(const char* code, const char* tag, const char* comment)
 {
