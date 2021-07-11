@@ -2,14 +2,17 @@
 CC:=clang
 CCFLAGS:=-g -Wall -pedantic -std=c11
 LUADIR:=-I/usr/include/lua5.3
-INCDIRS:=-Iinclude -Isrc -Ivendor/blip-buf $(shell sdl2-config --cflags) $(LUADIR)
+INCDIRS:=-Iinclude -Isrc -Ibuild -Ivendor/blip-buf $(shell sdl2-config --cflags) $(LUADIR)
 LUALIB:=lua5.3
 LDFLAGS:=$(shell sdl2-config --libs) -l$(LUALIB)
 SUBDIRS:=src/api src/core src/ext src/studio src/system/sdl src/
 OBJSUBDIRS:=$(foreach DIR, $(SUBDIRS), $(patsubst $(SRCDIR)%, $(OBJDIR)%, $(DIR)))
 SRCFILES:=$(foreach DIR, $(SUBDIRS), $(wildcard $(DIR)/*.c))
-OBJFILES:=$(patsubst $(SRCDIR)%, $(OBJDIR)%, $(SRCFILES:%.c=%.o)) \
-	vendor/blip-buf/blip_buf.o
+PLAYERFILES:=$(filter-out src/system/sdl/main.o, $(patsubst $(SRCDIR)%, $(OBJDIR)%, $(SRCFILES:%.c=%.o)) \
+	vendor/blip-buf/blip_buf.o)
+OBJFILES:=$(filter-out src/system/sdl/player.o, $(patsubst $(SRCDIR)%, $(OBJDIR)%, $(SRCFILES:%.c=%.o)) \
+	vendor/blip-buf/blip_buf.o)
+BUILDDIR:=build
 
 LDLIBS:=-lSDL2 -lSDL2_mixer -llua5.3
 
@@ -17,6 +20,7 @@ RM=rm -f
 MKDIR=mkdir
 
 PROJECT=amb-80
+PLAYER=amb-player
 TARGET=$(PROJECT)
 
 define MKOBJDIR
@@ -27,10 +31,13 @@ endef
 .PHONY: all clean cleanall
 
 .DEFAULT_GOAL := all
-all: $(OBJSUBDIRS) $(TARGET)
+all: $(OBJSUBDIRS) $(TARGET) $(PLAYER)
 
 $(TARGET): $(OBJFILES)
-	$(CC) $(LDFLAGS) $^ -o $@ 
+	$(CC) $(LDFLAGS) $^ -o $(BUILDDIR)/$@ 
+
+$(PLAYER): $(PLAYERFILES)
+	$(CC) $(LDFLAGS) $^ -o $(BUILDDIR)/$@ 	
 
 %.o: %.c
 	$(CC) $(CCFLAGS) $(INCDIRS) $^ -c -o $@
