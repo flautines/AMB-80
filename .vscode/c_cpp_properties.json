@@ -4,7 +4,9 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/usr/include/lua5.2"
+                "/usr/include/lua5.2",
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/src/core"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",

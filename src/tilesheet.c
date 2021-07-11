@@ -88,7 +88,7 @@ tic_tileptr tic_tilesheet_gettile(const tic_tilesheet* sheet, s32 index, bool lo
 
   div_t xdiv = div(ix, segment->nb_pages);
   u32 ptr_offset = (bank * Cols + iy) * Cols + page * Cols / segment->nb_pages + xdiv.quot;
-  u8* ptr = sheet->ptr + segment->ptr_size + ptr_offset;
+  u8* ptr = sheet->ptr + segment->ptr_size * ptr_offset;
   u32 offset = (xdiv.rem * Size);
 
   return (tic_tileptr) { segment, offset, ptr };

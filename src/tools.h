@@ -73,6 +73,7 @@ inline u8 tic_tool_peek1(const void* addr, u32 index)
 #undef PEEK_N
 #undef POKE_N
 
+u32*	tic_tool_palette_blit(const tic_palette* src, tic80_pixel_color_format fmt);
 bool	tic_tool_empty(const void* buffer, s32 size);
 #define EMPTY(BUFFER) (tic_tool_empty((BUFFER), sizeof (BUFFER)))
 

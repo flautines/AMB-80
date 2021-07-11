@@ -229,7 +229,6 @@ static void cart2ram(tic_mem* memory)
 	tic_api_sync(memory, EMPTY(memory->cart.bank0.screen.data) ? noscreen : all, 0, false);
 }
 
-
 //#385
 void tic_core_tick(tic_mem* tic, tic_tick_data* data)
 {
@@ -282,6 +281,24 @@ void tic_core_tick(tic_mem* tic, tic_tick_data* data)
 	core->state.tick(tic);
 }
 
+//#463
+void tic_core_close(tic_mem* memory)
+{
+	tic_core* core = (tic_core*)memory;
+
+	core->state.initialized = false;
+
+#define SCRIPT_DEF(name, ...)	 get_## name ##_script_config()->close(memory);
+	SCRIPT_LIST(SCRIPT_DEF)
+#undef SCRIPT_DEF
+
+	blip_delete(core->blip.left);
+	blip_delete(core->blip.right);
+
+	free(memory->samples.buffer);
+	free(core);
+}
+
 //#480
 void tic_core_tick_start(tic_mem* memory)
 {
@@ -308,6 +325,102 @@ void tic_core_tick_end(tic_mem* memory)
 	//core->state.setpix = setPixelOvr;
 	//core->state.getpix = getPixelOvr;
 	//core->state.drawhline = drawHLineOvr;
+}
+
+// copied from SDL2
+static inline void memset4(void* dst, u32 val, u32 dwords)
+{
+	u32 _n = (dwords + 3) / 4;
+	u32* _p = (u32*)dst;
+	u32 _val = (val);
+	if (dwords == 0) return;
+
+	switch (dwords % 4)
+	{
+		case 0: do {
+			*_p++ = _val;
+		case 3:	*_p++ = _val;
+		case 2: *_p++ = _val;
+		case 1:	*_p++ = _val;
+		} while (--_n);
+	}
+}
+
+//#535
+void tic_core_blit_ex(tic_mem* tic, tic80_pixel_color_format fmt, tic_scanline scanline, tic_overline overline, void* data)
+{
+	// init OVR palette
+	{
+		tic_core* core = (tic_core*)tic;
+
+		const tic_palette* pal = EMPTY(core->state.ovr.palette.data)
+			? &tic->ram.vram.palette
+			: &core->state.ovr.palette;
+
+		memcpy(core->state.ovr.raw, tic_tool_palette_blit(pal, fmt), sizeof core->state.ovr.raw);		
+	}
+
+	if (scanline)
+		scanline(tic, 0, data);
+
+	const u32* pal = tic_tool_palette_blit(&tic->ram.vram.palette, fmt);
+
+	u32* out = tic->screen;
+
+	memset4(&out[0 * TIC80_FULLWIDTH], pal[tic->ram.vram.vars.border], TIC80_FULLWIDTH * TIC80_MARGIN_TOP);
+
+	u32* rowPtr = out + (TIC80_MARGIN_TOP * TIC80_FULLWIDTH);
+	for (s32 r = 0; r < TIC80_HEIGHT; r++, rowPtr += TIC80_FULLWIDTH)
+	{
+		u32* colPtr = rowPtr + TIC80_MARGIN_LEFT;
+		memset4(rowPtr, pal[tic->ram.vram.vars.border], TIC80_MARGIN_LEFT);
+
+		s32 pos = (r + tic->ram.vram.vars.offset.y + TIC80_HEIGHT) % TIC80_HEIGHT * TIC80_WIDTH >> 1;
+
+		u32 x = (-tic->ram.vram.vars.offset.x + TIC80_WIDTH) % TIC80_WIDTH;
+		for (s32 c = 0; c < TIC80_WIDTH / 2; c++)
+		{
+			u8 val = ((u8*)tic->ram.vram.screen.data)[pos + c];
+			*(colPtr + (x++ % TIC80_WIDTH)) = pal[val & 0xf];
+			*(colPtr + (x++ % TIC80_WIDTH)) = pal[val >> 4];
+		}
+
+		memset4(rowPtr + (TIC80_FULLWIDTH - TIC80_MARGIN_RIGHT), pal[tic->ram.vram.vars.border], TIC80_MARGIN_RIGHT);
+
+		if (scanline && (r < TIC80_HEIGHT - 1))
+		{
+			scanline(tic, r + 1, data);
+			pal = tic_tool_palette_blit(&tic->ram.vram.palette, fmt);
+		}
+
+		memset4(&out[(TIC80_FULLHEIGHT - TIC80_MARGIN_BOTTOM) * TIC80_FULLWIDTH], pal[tic->ram.vram.vars.border], TIC80_FULLWIDTH * TIC80_MARGIN_BOTTOM);
+
+		if (overline)
+			overline(tic, data);
+	}
+}
+
+//#589
+static inline void scanline(tic_mem* memory, s32 row, void* data)
+{
+	tic_core* core = (tic_core*)memory;
+
+	if (core->state.initialized)
+		core->state.scanline(memory, row, data);
+}
+
+//#597
+static inline void overline(tic_mem* memory, void* data)
+{
+	tic_core* core = (tic_core*)memory;
+
+	if (core->state.initialized)
+		core->state.ovr.callback(memory, data);
+}
+//#605
+void tic_core_blit(tic_mem* tic, tic80_pixel_color_format fmt)
+{
+	tic_core_blit_ex(tic, fmt, scanline, overline, NULL);
 }
 
 //#610

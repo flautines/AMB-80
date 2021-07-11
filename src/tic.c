@@ -25,6 +25,8 @@
 
 #include <tic80.h>
 #include "api.h"
+#include "tools.h"
+#include "cart.h"
 
 static void onTrace(void* data, const char* text, u8 color)
 {

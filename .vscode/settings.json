@@ -1,6 +1,16 @@
 {
     "files.associations": {
-        "core.h": "c",
-        "api.h": "c"
-    }
+		"core.h": "c",
+		"api.h": "c",
+		"tilesheet.h": "c",
+		"typeinfo": "c",
+		"tic80.h": "c",
+		"tic80_config.h": "c",
+		"tic80_types.h": "c",
+		"tic.h": "c",
+		"defines.h": "c"
+	},
+	"lldb.displayFormat": "hex",
+	"lldb.showDisassembly": "auto",
+	"lldb.dereferencePointers": false
 }
