@@ -104,6 +104,53 @@ static struct
 
 } platform;
 
+//#212
+static void initSound()
+{
+	SDL_AudioSpec want = 
+	{
+		.freq = TIC80_SAMPLERATE,
+		.format = AUDIO_S16,
+		.channels = TIC_STEREO_CHANNELS,
+		.userdata = NULL,
+	};
+
+	platform.audio.device = SDL_OpenAudioDevice(NULL, 0, &want, &platform.audio.spec, 0);
+
+}
+
+//#236
+static void setWindowIcon()
+{
+	enum{ Size = 64, TileSize = 16, ColorKey = 14, Cols = TileSize / TIC_SPRITESIZE, Scale = Size/TileSize};
+
+	DEFER(u32* pixels = SDL_malloc(Size * Size * sizeof(u32)), SDL_free(pixels))
+	{
+		const u32* pal = tic_tool_palette_blit(&platform.studio->config()->cart->bank0.palette.scn, platform.studio->tic->screen_format);
+
+		for (s32 j = 0, index = 0; j < Size; j++)
+			for (s32 i = 0; i < Size; i++, index++)
+			{
+				u8 color = getSpritePixel(platform.studio->config()->cart->bank0.tiles.data, i/Scale, j/Scale);
+				pixels[index] = color == ColorKey ? 0 : pal[color];
+			}
+		
+		DEFER(SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(pixels, Size, Size,
+			sizeof(s32) * BITS_IN_BYTE, Size * sizeof(s32),
+			0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000), SDL_FreeSurface(surface))
+		{
+			SDL_SetWindowIcon(platform.window, surface);
+		}
+	}
+}
+
+//#418
+static void initGPU()
+{
+	platform.gpu.renderer = SDL_CreateRenderer(platform.window, -1, SDL_RENDERER_ACCELERATED);
+	platform.gpu.texture = SDL_CreateTexture(platform.gpu.renderer, STUDIO_PIXEL_FORMAT, SDL_TEXTUREACCESS_STREAMING, TIC80_FULLWIDTH, TIC80_FULLHEIGHT);
+}
+
 //#1346
 static const char* getAppFolder()
 {
@@ -113,6 +160,37 @@ static const char* getAppFolder()
 	strcpy(appFolder, path);
 	SDL_free(path);
 
+}
+
+//#1402
+void tic_sys_fullscreen()
+{
+	SDL_SetWindowFullscreen(platform.window,
+		SDL_GetWindowFlags(platform.window) & SDL_WINDOW_FULLSCREEN_DESKTOP ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP);
+}
+
+//#1522
+static void gpuTick()
+{
+	tic_mem* tic = platform.studio->tic;
+
+	tic_sys_poll();
+
+	if (platform.studio->quit)
+	{
+		return;
+	}
+
+	platform.studio->tick();
+	renderClear(platform.gpu.renderer);
+	updateTextureBytes(platform.gpu.texture, tic->screen, TIC80_FULLWIDTH, TIC80_FULLHEIGHT);
+}
+
+//#1642
+static void createMouseCursors()
+{
+	for (s32 i = 0; i < COUNT_OF(platform.mouse.cursors); i++)
+		platform.mouse.cursors[i] = SDL_CreateSystemCursor(SystemCursors[i]);
 }
 
 //#1648
@@ -141,7 +219,7 @@ static s32 start(s32 argc, char **argv, const char* folder)
 					Width, Height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 
 				setWindowIcon();
-				createMouseCursor();
+				createMouseCursors();
 
 				initGPU();
 

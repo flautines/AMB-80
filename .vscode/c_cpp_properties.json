@@ -5,8 +5,11 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "/usr/include/lua5.2",
+                "${workspaceFolder}/src/",
+				"${workspaceFolder}/src/**",
                 "${workspaceFolder}/include",
-                "${workspaceFolder}/src/core"
+                "${workspaceFolder}/src/core",
+                "/usr/include/SDL2"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",

@@ -8,7 +8,10 @@
 		"tic80_config.h": "c",
 		"tic80_types.h": "c",
 		"tic.h": "c",
-		"defines.h": "c"
+		"defines.h": "c",
+		"version.h": "c",
+		"system.h": "c",
+		"studio.h": "c"
 	},
 	"lldb.displayFormat": "hex",
 	"lldb.showDisassembly": "auto",
