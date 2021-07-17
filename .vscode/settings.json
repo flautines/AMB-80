@@ -11,7 +11,8 @@
 		"defines.h": "c",
 		"version.h": "c",
 		"system.h": "c",
-		"studio.h": "c"
+		"studio.h": "c",
+		"surf.h": "c"
 	},
 	"lldb.displayFormat": "hex",
 	"lldb.showDisassembly": "auto",

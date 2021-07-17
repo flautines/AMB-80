@@ -31,7 +31,7 @@
 #define MOVE(...)           memmove(malloc(sizeof _VA_ARGS__), &__VA_ARGS__, szieof __VA_ARGS__)
 #define DEF2STR2(x)         #x
 #define DEF2STR(x)          DEF2STR2(x)
-#define STRLEN(x)           (sizeof str - 1)
+#define STRLEN(str)         (sizeof str - 1)
 #define CONCAT2(a, b)       a ## b
 #define CONCAT(a, b)        CONCAT2(a,b)
 #define MACROVAR(name)      CONCAT(name, __LINE__)

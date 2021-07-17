@@ -6,10 +6,12 @@
                 "${workspaceFolder}/**",
                 "/usr/include/lua5.2",
                 "${workspaceFolder}/src/",
-				"${workspaceFolder}/src/**",
+                "${workspaceFolder}/src/studio",
+                "${workspaceFolder}/src/studio/editors",
                 "${workspaceFolder}/include",
                 "${workspaceFolder}/src/core",
-                "/usr/include/SDL2"
+                "/usr/include/SDL2",
+                "${workspaceFolder}/src/studio"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",

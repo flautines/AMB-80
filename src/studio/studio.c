@@ -22,12 +22,22 @@
 
 #include "studio.h"
 
-//#include "editors/code.h"
-//#include "editors/sprite.h"
-//#include "editors.map.h"
+#include "editors/code.h"
+#include "editors/sprite.h"
+#include "editors/map.h"
+#include "editors/world.h"
+#include "editors/sfx.h"
+#include "editors/music.h"
+#include "screens/console.h"
+#include "screens/surf.h"
+#include "screens/dialog.h"
+//#include "ext/history.h"
+#include "net.h"
+#include "wave_writer.h"
+//#include "ext/gif.h"
 
 //#include "ext/md5.h"
-//#include "screens/start.h"
+#include "screens/start.h"
 //#include "screens/run.h"
 //#include "config.h"
 #include "cart.h"
@@ -49,6 +59,38 @@
 
 static const char VideoGif[] = "video%i.gif";
 static const char ScreenGif[] = "screen%i.gif";
+
+typedef struct
+{
+	u8 data[MD5_HASHSIZE];
+} CartHash;
+
+static const EditorMode Modes[] = 
+{
+	TIC_CODE_MODE,
+	TIC_SPRITE_MODE,
+	TIC_MAP_MODE,
+	TIC_SFX_MODE,
+	TIC_MUSIC_MODE,
+};
+
+static const EditorMode BankModes[] =
+{
+	TIC_SPRITE_MODE,
+	TIC_MAP_MODE,
+	TIC_SFX_MODE,
+	TIC_MUSIC_MODE,
+};
+
+typedef struct
+{
+	bool down;
+	bool click;
+
+	tic_point start;
+	tic_point end;
+
+} MouseState;
 
 //#107
 static struct 
@@ -216,7 +258,7 @@ Studio* studioInit(s32 argc, char **argv, s32 samplerate, const char* folder)
 		}
 	}
 
-	impl.tic80local = (tic80_local*)tic80_create(impl.smaplerate);
+	impl.tic80local = (tic80_local*)tic80_create(impl.samplerate);
 	impl.studio.tic = impl.tic80local->memory;
 
 	{
