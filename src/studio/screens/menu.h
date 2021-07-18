@@ -24,34 +24,46 @@
 
 #include "studio/studio.h"
 
-typedef struct Dialog Dialog;
+typedef struct Menu Menu;
 
-struct Dialog
+struct Menu
 {
 	tic_mem* tic;
+	struct tic_fs* fs;
 
 	bool init;
-	DialogCallback callback;
-	void* data;
-	const char** text;
-	s32 rows;
+	bool cover;
 	s32 ticks;
 
-	u32 focus;
+	struct 
+	{
+		s32 focus;
+	} main;
+
+	struct 
+	{
+		u32 tab;
+		s32 selected;
+	} gamepad;
 
 	tic_point pos;
 
-	struct
+	struct 
 	{
 		tic_point start;
 		bool active;
 	} drag;
 
-	void(*tick)(Dialog* Dialog);
+	enum
+	{
+		MAIN_MENU_MODE,
+		GAMEPAD_MENU_MODE,
+	} mode;
+
+	void (*tick)(Menu* Menu);
 	void (*scanline)(tic_mem* tic, s32 row, void* data);
 	void (*overline)(tic_mem* tic, void* data);
-	void (*escape)(Dialog* Dialog);
 };
 
-void initDialog(Dialog* dialog, tic_mem* tic, const char** text, s32 rows, DialogCallback callback, void* data);
-void freeDialog(Dialog* dialog);
+void initMenu(Menu* menu, tic_mem* tic, struct tic_fs* fs);
+void freeMenu(Menu* menu);

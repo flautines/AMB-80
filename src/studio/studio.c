@@ -38,11 +38,12 @@
 
 //#include "ext/md5.h"
 #include "screens/start.h"
-//#include "screens/run.h"
-//#include "config.h"
+#include "screens/run.h"
+#include "screens/menu.h"
+#include "config.h"
 #include "cart.h"
 
-//#include "fs.h"
+#include "fs.h"
 
 //#include "argparse.h"
 
@@ -232,6 +233,228 @@ static struct
 		.frames = 0,
 	},
 };
+
+//#712
+const StudioConfig* getConfig()
+{
+	return &impl.config->data;
+}
+
+//#965
+static void exitConfirm(bool yes, void* data)
+{
+	impl.studio.quit = yes;
+}
+
+//#970
+void exitStudio()
+{
+	if (impl.mode != TIC_START_MODE && studioCartChanged())
+	{
+		static const char* Rows[] =
+		{
+			"YOU HAVE",
+			"UNSAVED CHANGES",
+			"",
+			"DO YOU REALLY WANT",
+			"TO EXIT?",
+		};
+		showDialog(Rows, COUNT_OF(Rows), exitConfirm, NULL);
+	}
+	else
+		exitConfirm(true, NULL);
+}
+
+//#1217
+void showDialog(const char** text, s32 rows, DialogCallback callback, void* data)
+{
+	if (impl.mode != TIC_DIALOG_MODE)
+	{
+		initDialog(impl.dialog, impl.studio.tic, text, rows, callback, data);
+		impl.dialogMode = impl.mode;
+		setStudioMode(TIC_DIALOG_MODE);
+	}
+}
+
+//#1627
+static void updateStudioProject()
+{
+	if (impl.mode != TIC_START_MODE)
+	{
+		Console* console = impl.console;
+
+		u64 date = fs_date(console->rom.path);
+
+		if (impl.cart.mdate && date > impl.cart.mdate)
+		{
+			if (studioCartChanged())
+			{
+				static const char* Rows[] = 
+				{
+					"",
+					"CART HAS CHANGED!",
+					"",
+					"DO YOU WANT",
+					"TO RELOAD IT?"
+				};
+				// TODO
+				//showDialog(Rows, COUNT_OF(Rows), reloadConfirm, NULL);
+			}
+			else console->updateProject(console);
+		}
+	}
+}
+
+//#1891
+static void studioTick()
+{
+	tic_mem* tic = impl.studio.tic;
+
+	tic_net_start (impl.net);
+
+	//TODO
+	//processShortcuts();
+	//processMouseStates();
+	//processGamepadMapping();
+
+	//renderStudio();
+
+	{
+		tic_scanline scanline = NULL;
+		tic_overline overline = NULL;
+		void* data = NULL;
+
+		switch (impl.mode)
+		{
+			case TIC_MENU_MODE:
+			{
+				overline = impl.menu->overline;
+				scanline = impl.menu->scanline;
+				data = impl.menu;
+			}
+			break;
+			case TIC_SPRITE_MODE:
+			{
+				Sprite* sprite = impl.banks.sprite[impl.bank.index.sprites];
+				overline = sprite->overline;
+				scanline = sprite->scanline;
+				data = sprite;
+			}
+			break;
+			case TIC_MAP_MODE:
+			{
+				Map* map = impl.banks.map[impl.bank.index.map];
+				overline = map->overline;
+				scanline = map->scanline;
+				data = map;
+			}
+			break;
+			case TIC_WORLD_MODE:
+			{
+				overline = impl.world->overline;
+				scanline = impl.world->scanline;
+				data = impl.world;
+			}
+			break;
+			case TIC_DIALOG_MODE:
+			{
+				overline = impl.dialog->overline;
+				scanline = impl.dialog->scanline;
+				data = impl.dialog;
+			}
+			break;
+			case TIC_SURF_MODE:
+			{
+				overline = impl.surf->overline;
+				scanline = impl.surf->scanline;
+				data = impl.surf;
+			}
+			break;
+		
+		default:
+			break;
+		}
+
+		if (impl.mode != TIC_RUN_MODE)
+		{
+			memcpy(tic->ram.vram.palette.data, getConfig()->cart->bank0.palette.scn.data, sizeof(tic_palette));
+			memcpy(tic->ram.font.data, impl.systemFont.data, sizeof(tic_font));
+		}
+
+		data
+			? tic_core_blit_ex(tic, tic->screen_format, scanline, overline, data)
+			: tic_core_blit(tic, tic->screen_format);
+
+		//TODO
+		//if (isRecordFrame())
+		//	recordFrame(tic->screen);
+	}
+
+	//drawPopup();
+	tic_net_end(impl.net);
+}
+
+//#1984
+static void studioClose()
+{
+	for (s32 i = 0; i < TIC_EDITOR_BANKS; i++)
+	{
+		freeSprite	(impl.banks.sprite[i]);
+		freeMap		(impl.banks.map[i]);
+		freeSfx		(impl.banks.sfx[i]);
+		freeMusic	(impl.banks.music[i]);
+	}
+
+	freeCode		(impl.code);
+	freeConsole		(impl.console);
+	freeWorld		(impl.world);
+	freeDialog		(impl.dialog);
+	freeSurf		(impl.surf);
+
+	freeStart		(impl.start);
+	freeRun			(impl.run);
+	freeConfig		(impl.config);
+	freeMenu		(impl.menu);
+
+	if (impl.tic80local)
+		tic80_delete((tic80*)impl.tic80local);
+
+	tic_net_close(impl.net);
+
+	free(impl.fs);
+}
+
+//#2019
+static StartArgs parseArgs(s32 argc, char **argv)
+{
+	static const char *const usage[] =
+	{
+		"tic80 [cart] [options]",
+		NULL,
+	};
+
+	StartArgs args = {0};
+/*
+	struct argparse_option options[] =
+	{
+		OPT_HELP(),
+#define CMD_PARAMS_DEF(name, type, post, help) OPT_##type('\0', #name, &args.name, help),
+		CMD_PARAMS_LIST(CMD_PARAMS_DEF)
+#undef CMD_PARAMS_DEF
+		OPT_END(),		
+	};
+
+	struct argparse argparse;
+	argparse_init(&argparse, options, usage, 0);
+	argparse_describe(&argparse, "\n", TIC_NAME " startup options:", NULL);
+	argc = argparse_parse(&argparse, argc, (const char**)argv);
+
+	if (argc == 1)
+		args.cart = argv[0];
+*/
+	return args;
+	
+}
 
 //#2049
 Studio* studioInit(s32 argc, char **argv, s32 samplerate, const char* folder)

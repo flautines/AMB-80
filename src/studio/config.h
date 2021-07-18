@@ -22,36 +22,21 @@
 
 #pragma once
 
-#include "studio/studio.h"
+#include "studio.h"
 
-typedef struct Surf Surf;
+typedef struct Config Config;
 
-struct Surf
+struct Config
 {
 	tic_mem* tic;
 	struct tic_fs* fs;
-	struct tic_net* net;
-	struct Console* console;
-	struct Movie* state;
 
-	bool init;
-	bool loading;
-	s32 ticks;
+	StudioConfig data;
+	tic_cartridge* cart;
 
-	struct
-	{
-		s32 pos;
-		s32 anim;
-		s32 anim_target;
-		struct MenuItem* items;
-		s32 count;
-	} menu;
-
-	void (*tick)(Surf* surf);
-	void (*resume)(Surf* surf);
-	void (*scanline)(tic_mem* tic, s32 row, void* data);
-	void (*overline)(tic_mem* tic, void* data);
+	void (*save)(Config*);
+	void (*reset)(Config*);
 };
 
-void initSurf(Surf* surf, tic_mem* tic, struct Console* console);
-void freeSurf(Surf* surf);
+void initConfig(Config* config, tic_mem* tic, struct tic_fs* fs);
+void freeConfig(Config* config);

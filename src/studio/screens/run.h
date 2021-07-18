@@ -24,34 +24,22 @@
 
 #include "studio/studio.h"
 
-typedef struct Surf Surf;
+typedef struct Run Run;
 
-struct Surf
+struct Run
 {
 	tic_mem* tic;
-	struct tic_fs* fs;
-	struct tic_net* net;
 	struct Console* console;
-	struct Movie* state;
+	struct tic_fs* fs;
+	tic_tick_data tickData;
 
-	bool init;
-	bool loading;
-	s32 ticks;
+	bool exit;
 
-	struct
-	{
-		s32 pos;
-		s32 anim;
-		s32 anim_target;
-		struct MenuItem* items;
-		s32 count;
-	} menu;
+	char saveid[TICNAME_MAX];
+	tic_persistent pmem;
 
-	void (*tick)(Surf* surf);
-	void (*resume)(Surf* surf);
-	void (*scanline)(tic_mem* tic, s32 row, void* data);
-	void (*overline)(tic_mem* tic, void* data);
+	void (*tick)(Run*);
 };
 
-void initSurf(Surf* surf, tic_mem* tic, struct Console* console);
-void freeSurf(Surf* surf);
+void initRun(Run*, struct Console*, struct tic_fs*, tic_mem*);
+void freeRun(Run* run);

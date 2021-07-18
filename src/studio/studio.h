@@ -66,7 +66,7 @@
 #define CMD_PARAMS_LIST(macro)														\
 	macro(skip,			BOOLEAN,	"",			"skip startup animation")			\
 	macro(nosound,		BOOLEAN,	"",			"disable sound output")				\
-	macro(cli,			BOOLEAN,	""			"console only output")				\
+	macro(cli,			BOOLEAN,	"",			"console only output")				\
 	macro(fullscreen,	BOOLEAN,	"",			"enable fullscreen mode")			\
 	macro(fs,			STRING,		"=<str>",	"path to the file system folder")	\
 	macro(scale, 		INTEGER,	"=<int>", 	"main window scale")				\
@@ -177,6 +177,11 @@ void setCursor(tic_cursor id);
 //bool checkMouseClick(const tic_rect* rect, tic_mouse_btn button);
 //bool checkMouseDown(const tic_rect* rect, tic_mouse_btn button)
 
+void setStudioMode(EditorMode mode);
+
+void exitStudio();
+
+//#214
 typedef enum
 {
 	TIC_TOOLBAR_CUT,
@@ -187,3 +192,6 @@ typedef enum
 } StudioEvent;
 
 typedef void (*DialogCallback)(bool yes, void* data);
+void showDialog(const char** text, s32 rows, DialogCallback callback, void* data);
+
+bool studioCartChanged();

@@ -20,38 +20,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
+#include "studio.h"
+#include "fs.h"
+#include "net.h"
 
-#include "studio/studio.h"
-
-typedef struct Surf Surf;
-
-struct Surf
+struct tic_fs
 {
-	tic_mem* tic;
-	struct tic_fs* fs;
-	struct tic_net* net;
-	struct Console* console;
-	struct Movie* state;
-
-	bool init;
-	bool loading;
-	s32 ticks;
-
-	struct
-	{
-		s32 pos;
-		s32 anim;
-		s32 anim_target;
-		struct MenuItem* items;
-		s32 count;
-	} menu;
-
-	void (*tick)(Surf* surf);
-	void (*resume)(Surf* surf);
-	void (*scanline)(tic_mem* tic, s32 row, void* data);
-	void (*overline)(tic_mem* tic, void* data);
+	char dir[TICNAME_MAX];
+	char work[TICNAME_MAX];
+	tic_net* net;
 };
-
-void initSurf(Surf* surf, tic_mem* tic, struct Console* console);
-void freeSurf(Surf* surf);
